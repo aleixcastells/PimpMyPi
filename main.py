@@ -36,15 +36,27 @@ def get_cpu_temperature():
     return float(cpu_temp_raw) / 1000.0  # Convert to degrees Celsius
 
 
-# Calculate fan speed based on temperature using linear interpolation.
+# Initialize a variable to store the last duty cycle
+last_duty_cycle = 10  # Starting with 10% duty cycle
+
+
 def calculate_fan_speed(cpu_temp):
-    if cpu_temp <= 20.0:
-        return 10  # 10% for temperatures 30  C or below
-    elif cpu_temp >= 45.0:
-        return 100  # 100% for temperatures 50  C or above
+    global last_duty_cycle
+    if cpu_temp <= 30.0:
+        duty_cycle = 10  # 10% for temperatures 30°C or below
+    elif cpu_temp >= 50.0:
+        duty_cycle = 100  # 100% for temperatures 50°C or above
     else:
-        # Linear interpolation between 30  C (10%) and 50  C (100%)
-        return 10 + (cpu_temp - 30) * (90 / 20)  # Gradual increase between 10% and 100%
+        # Linear interpolation between 30°C (10%) and 50°C (100%)
+        duty_cycle = 10 + (cpu_temp - 30) * (90 / 20)  # Increase from 10% to 100%
+
+    # Implement hysteresis: Change duty cycle only if the difference is significant
+    if abs(duty_cycle - last_duty_cycle) >= 5:
+        last_duty_cycle = duty_cycle
+    else:
+        duty_cycle = last_duty_cycle
+
+    return duty_cycle
 
 
 # Log CPU temperature and fan duty cycle to a daily log file.
