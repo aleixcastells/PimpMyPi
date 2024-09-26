@@ -62,7 +62,9 @@ def log_temperature(cpu_temp, duty_cycle):
 def print_to_console(cpu_temp, duty_cycle):
     """Print CPU temperature and fan duty cycle to PM2 console."""
     now = datetime.now(timezone).strftime("%H:%M:%S")
-    console_entry = f"[{now}] CPU Temp: {cpu_temp:.2f}  C, Fan Speed: {duty_cycle:.2f}%"
+    console_entry = (
+        f"[{now}] CPU Temp: {cpu_temp:.1f}  C, Fan Speed: {round(duty_cycle)}%"
+    )
     print(console_entry)
 
 
