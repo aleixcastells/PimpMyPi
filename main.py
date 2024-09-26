@@ -37,7 +37,7 @@ def get_cpu_temperature():
 
 
 # Temperature thresholds (in degrees Celsius)
-MIN_TEMP = 30.0  # Minimum temperature to start increasing fan speed
+MIN_TEMP = 20.0  # Minimum temperature to start increasing fan speed
 MAX_TEMP = 50.0  # Maximum temperature to reach maximum fan speed
 
 # Duty cycle thresholds (in percentage)
