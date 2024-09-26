@@ -7,9 +7,15 @@ import RPi.GPIO as GPIO
 # Time zone for Spain
 timezone = pytz.timezone("Europe/Madrid")
 
+# Set pins
+FAN_PIN = 23
+LED_1_PIN = None
+LED_2_PIN = None
+BTN_1_PIN = None
+BTN_2_PIN = None
+
 # Set up GPIO for fan control
 GPIO.setmode(GPIO.BCM)
-FAN_PIN = 23
 GPIO.setup(FAN_PIN, GPIO.OUT)
 
 # Set up PWM for fan control
@@ -23,15 +29,15 @@ if not os.path.exists(log_folder):
     os.makedirs(log_folder)
 
 
+# Read the CPU temperature from the system.
 def get_cpu_temperature():
-    # Read the CPU temperature from the system.
     with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
         cpu_temp_raw = f.readline()
     return float(cpu_temp_raw) / 1000.0  # Convert to degrees Celsius
 
 
+# Calculate fan speed based on temperature using linear interpolation.
 def calculate_fan_speed(cpu_temp):
-    # Calculate fan speed based on temperature using linear interpolation.
     if cpu_temp <= 20.0:
         return 10  # 10% for temperatures 30  C or below
     elif cpu_temp >= 45.0:
@@ -41,9 +47,9 @@ def calculate_fan_speed(cpu_temp):
         return 10 + (cpu_temp - 30) * (90 / 20)  # Gradual increase between 10% and 100%
 
 
+# Log CPU temperature and fan duty cycle to a daily log file.
+# Get the current date and time in Spanish time
 def log_temperature(cpu_temp, duty_cycle):
-    # Log CPU temperature and fan duty cycle to a daily log file.
-    # Get the current date and time in Spanish time
     now = datetime.now(timezone)
     date_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H:%M:%S")
