@@ -24,15 +24,15 @@ if not os.path.exists(log_folder):
 
 
 def get_cpu_temperature():
-    """Read the CPU temperature from the system."""
+    # Read the CPU temperature from the system.
     with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
         cpu_temp_raw = f.readline()
     return float(cpu_temp_raw) / 1000.0  # Convert to degrees Celsius
 
 
 def calculate_fan_speed(cpu_temp):
-    """Calculate fan speed based on temperature using linear interpolation."""
-    if cpu_temp <= 25.0:
+    # Calculate fan speed based on temperature using linear interpolation.
+    if cpu_temp <= 20.0:
         return 10  # 10% for temperatures 30  C or below
     elif cpu_temp >= 45.0:
         return 100  # 100% for temperatures 50  C or above
@@ -42,29 +42,25 @@ def calculate_fan_speed(cpu_temp):
 
 
 def log_temperature(cpu_temp, duty_cycle):
-    """Log CPU temperature and fan duty cycle to a daily log file."""
+    # Log CPU temperature and fan duty cycle to a daily log file.
     # Get the current date and time in Spanish time
     now = datetime.now(timezone)
     date_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H:%M:%S")
 
     # Log file name based on current date
-    log_file_path = os.path.join(log_folder, f"{date_str}-report.log")
+    log_file_path = os.path.join(log_folder, f"{date_str}.log")
 
     # Create or append to the log file
     with open(log_file_path, "a") as log_file:
-        log_entry = (
-            f"[{time_str}] CPU Temp: {cpu_temp:.2f}  C, Fan Speed: {duty_cycle:.2f}%\n"
-        )
+        log_entry = f"[{time_str}] Temp: {cpu_temp:.1f}°C, Fan: {round(duty_cycle)}%\n"
         log_file.write(log_entry)
 
 
 def print_to_console(cpu_temp, duty_cycle):
     """Print CPU temperature and fan duty cycle to PM2 console."""
     now = datetime.now(timezone).strftime("%H:%M:%S")
-    console_entry = (
-        f"[{now}] CPU Temp: {cpu_temp:.1f}  C, Fan Speed: {round(duty_cycle)}%"
-    )
+    console_entry = f"[{now}] Temp: {cpu_temp:.1f}°C, Fan: {round(duty_cycle)}%"
     print(console_entry)
 
 
