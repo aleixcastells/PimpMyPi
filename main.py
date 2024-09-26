@@ -36,19 +36,31 @@ def get_cpu_temperature():
     return float(cpu_temp_raw) / 1000.0  # Convert to degrees Celsius
 
 
+# Temperature thresholds (in degrees Celsius)
+MIN_TEMP = 30.0  # Minimum temperature to start increasing fan speed
+MAX_TEMP = 50.0  # Maximum temperature to reach maximum fan speed
+
+# Duty cycle thresholds (in percentage)
+MIN_DUTY_CYCLE = 10.0  # Minimum duty cycle (fan speed)
+MAX_DUTY_CYCLE = 100.0  # Maximum duty cycle (fan speed)
+
 # Initialize a variable to store the last duty cycle
-last_duty_cycle = 10  # Starting with 10% duty cycle
+last_duty_cycle = MIN_DUTY_CYCLE  # Start with the minimum duty cycle
 
 
 def calculate_fan_speed(cpu_temp):
     global last_duty_cycle
-    if cpu_temp <= 30.0:
-        duty_cycle = 10  # 10% for temperatures 30°C or below
-    elif cpu_temp >= 50.0:
-        duty_cycle = 100  # 100% for temperatures 50°C or above
+    if cpu_temp <= MIN_TEMP:
+        duty_cycle = MIN_DUTY_CYCLE
+    elif cpu_temp >= MAX_TEMP:
+        duty_cycle = MAX_DUTY_CYCLE
     else:
-        # Linear interpolation between 30°C (10%) and 50°C (100%)
-        duty_cycle = 10 + (cpu_temp - 30) * (90 / 20)  # Increase from 10% to 100%
+        # Linear interpolation between MIN_TEMP and MAX_TEMP
+        duty_cycle = MIN_DUTY_CYCLE + (
+            (cpu_temp - MIN_TEMP)
+            * (MAX_DUTY_CYCLE - MIN_DUTY_CYCLE)
+            / (MAX_TEMP - MIN_TEMP)
+        )
 
     # Implement hysteresis: Change duty cycle only if the difference is significant
     if abs(duty_cycle - last_duty_cycle) >= 5:
