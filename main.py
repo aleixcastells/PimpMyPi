@@ -70,6 +70,10 @@ def print_to_console(cpu_temp, duty_cycle):
     print(console_entry)
 
 
+# Initialize a list to store temperature readings
+last_temps = []
+N = 3  # Number of readings to average
+
 try:
     last_log_time = time.time()  # Keep track of when to log to the file
 
@@ -77,16 +81,26 @@ try:
         # Read the CPU temperature
         cpu_temp = get_cpu_temperature()
 
-        # Calculate fan speed based on CPU temperature
-        current_duty_cycle = calculate_fan_speed(cpu_temp)
+        # Append the current temperature to the list
+        last_temps.append(cpu_temp)
+
+        # Keep only the last N readings
+        if len(last_temps) > N:
+            last_temps.pop(0)
+
+        # Calculate the average temperature
+        avg_cpu_temp = sum(last_temps) / len(last_temps)
+
+        # Calculate fan speed based on the average CPU temperature
+        current_duty_cycle = calculate_fan_speed(avg_cpu_temp)
         fan_pwm.ChangeDutyCycle(current_duty_cycle)
 
         # Print temperature and fan speed to console every second
-        print_to_console(cpu_temp, current_duty_cycle)
+        print_to_console(avg_cpu_temp, current_duty_cycle)
 
         # Log the temperature and fan speed to the file every 60 seconds
         if time.time() - last_log_time >= 60:
-            log_temperature(cpu_temp, current_duty_cycle)
+            log_temperature(avg_cpu_temp, current_duty_cycle)
             last_log_time = time.time()
 
         # Sleep for 1 second before the next reading
