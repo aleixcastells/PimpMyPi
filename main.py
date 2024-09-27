@@ -38,15 +38,12 @@ def get_cpu_temperature():
 
 
 # Temperature thresholds (in degrees Celsius)
-MIN_TEMP = 30.0  # Minimum temperature to start increasing fan speed
-MAX_TEMP = 50.0  # Maximum temperature to reach maximum fan speed
+MIN_TEMP = 35.0  # Minimum temperature to start increasing fan speed
+MAX_TEMP = 45.0  # Maximum temperature to reach maximum fan speed
 
 # Duty cycle thresholds (in percentage)
 MIN_DUTY_CYCLE = 10.0  # Minimum duty cycle (fan speed)
 MAX_DUTY_CYCLE = 100.0  # Maximum duty cycle (fan speed)
-
-# Initialize a variable to store the last duty cycle
-last_duty_cycle = MIN_DUTY_CYCLE  # Start with the minimum duty cycle
 
 
 def calculate_fan_speed(cpu_temp):
@@ -80,7 +77,7 @@ def log_temperature(cpu_temp, duty_cycle):
 def print_to_console(cpu_temp, duty_cycle):
     """Print CPU temperature and fan duty cycle to PM2 console."""
     now = datetime.now(timezone).strftime("%H:%M:%S")
-    console_entry = f"T: {round(cpu_temp)}°C, F: {round(duty_cycle)}%"
+    console_entry = f"T[{cpu_temp:.1f}°C] FAN[{round(duty_cycle)}%]"
     print(console_entry)
 
 
