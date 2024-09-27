@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 import pytz
 import RPi.GPIO as GPIO
+import numpy as np
 
 # Time zone for Spain
 timezone = pytz.timezone("Europe/Madrid")
@@ -37,7 +38,7 @@ def get_cpu_temperature():
 
 
 # Temperature thresholds (in degrees Celsius)
-MIN_TEMP = 20.0  # Minimum temperature to start increasing fan speed
+MIN_TEMP = 30.0  # Minimum temperature to start increasing fan speed
 MAX_TEMP = 50.0  # Maximum temperature to reach maximum fan speed
 
 # Duty cycle thresholds (in percentage)
@@ -50,25 +51,14 @@ last_duty_cycle = MIN_DUTY_CYCLE  # Start with the minimum duty cycle
 
 def calculate_fan_speed(cpu_temp):
     global last_duty_cycle
-    if cpu_temp <= MIN_TEMP:
-        duty_cycle = MIN_DUTY_CYCLE
-    elif cpu_temp >= MAX_TEMP:
-        duty_cycle = MAX_DUTY_CYCLE
-    else:
-        # Linear interpolation between MIN_TEMP and MAX_TEMP
-        duty_cycle = MIN_DUTY_CYCLE + (
-            (cpu_temp - MIN_TEMP)
-            * (MAX_DUTY_CYCLE - MIN_DUTY_CYCLE)
-            / (MAX_TEMP - MIN_TEMP)
-        )
 
-    # Implement hysteresis: Change duty cycle only if the difference is significant
-    if abs(duty_cycle - last_duty_cycle) >= 5:
-        last_duty_cycle = duty_cycle
-    else:
-        duty_cycle = last_duty_cycle
+    if cpu_temp > MAX_TEMP:
+        return MAX_DUTY_CYCLE
 
-    return duty_cycle
+    if cpu_temp < MIN_TEMP:
+        return MIN_DUTY_CYCLE
+
+    return np.interp(cpu_temp, [MIN_TEMP, MAX_TEMP], [MIN_DUTY_CYCLE, MAX_DUTY_CYCLE])
 
 
 # Log CPU temperature and fan duty cycle to a daily log file.
