@@ -9,7 +9,7 @@ import numpy as np
 timezone = pytz.timezone("Europe/Madrid")
 
 # Set pins
-FAN_PIN = 23
+FAN_PIN = 17
 LED_1_PIN = None
 LED_2_PIN = None
 BTN_1_PIN = None
