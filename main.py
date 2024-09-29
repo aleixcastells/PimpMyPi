@@ -5,6 +5,11 @@ import pytz
 import RPi.GPIO as GPIO
 import numpy as np
 
+import board
+import busio
+import adafruit_ads1x15.ads1115 as ADS
+from adafruit_ads1x15.analog_in import AnalogIn
+
 # Time zone for Spain
 timezone = pytz.timezone("Europe/Madrid")
 
@@ -29,12 +34,32 @@ log_folder = os.path.join(os.getcwd(), "logs")
 if not os.path.exists(log_folder):
     os.makedirs(log_folder)
 
+# Initialize I2C bus and ADC
+i2c = busio.I2C(board.SCL, board.SDA)
+ads = ADS.ADS1115(i2c)
+ads.gain = 1  # Gain setting for the ADC (+/-4.096V)
+
+# Create single-ended input on channel 0
+chan = AnalogIn(ads, ADS.P0)
+
 
 # Read the CPU temperature from the system.
 def get_cpu_temperature():
     with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
         cpu_temp_raw = f.readline()
     return float(cpu_temp_raw) / 1000.0  # Convert to degrees Celsius
+
+
+# Read the battery voltage
+def read_battery_voltage():
+    R1 = 10000.0  # Ohms (10K)
+    R2 = 3300.0  # Ohms (3.3K)
+    voltage_divider_ratio = (R1 + R2) / R2
+
+    Vout = chan.voltage  # Voltage at the ADC input
+    Vin = Vout * voltage_divider_ratio
+
+    return Vin
 
 
 # Temperature thresholds (in degrees Celsius)
@@ -47,8 +72,6 @@ MAX_DUTY_CYCLE = 100.0  # Maximum duty cycle (fan speed)
 
 
 def calculate_fan_speed(cpu_temp):
-    global last_duty_cycle
-
     if cpu_temp > MAX_TEMP:
         return MAX_DUTY_CYCLE
 
@@ -58,9 +81,8 @@ def calculate_fan_speed(cpu_temp):
     return np.interp(cpu_temp, [MIN_TEMP, MAX_TEMP], [MIN_DUTY_CYCLE, MAX_DUTY_CYCLE])
 
 
-# Log CPU temperature and fan duty cycle to a daily log file.
-# Get the current date and time in Spanish time
-def log_temperature(cpu_temp, duty_cycle):
+# Log CPU temperature, fan duty cycle, and battery voltage to a daily log file.
+def log_temperature(cpu_temp, duty_cycle, battery_voltage):
     now = datetime.now(timezone)
     date_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H:%M:%S")
@@ -70,14 +92,15 @@ def log_temperature(cpu_temp, duty_cycle):
 
     # Create or append to the log file
     with open(log_file_path, "a") as log_file:
-        log_entry = f"[{time_str}] Temp: {cpu_temp:.1f}°C, Fan: {round(duty_cycle)}%\n"
+        log_entry = f"[{time_str}] Temp: {cpu_temp:.1f}°C, Fan: {round(duty_cycle)}%, Battery: {battery_voltage:.2f}V\n"
         log_file.write(log_entry)
 
 
-def print_to_console(cpu_temp, duty_cycle):
-    """Print CPU temperature and fan duty cycle to PM2 console."""
-    now = datetime.now(timezone).strftime("%H:%M:%S")
-    console_entry = f"[TEMP: {cpu_temp:.1f}°C] [FAN: {round(duty_cycle)}%]"
+def print_to_console(cpu_temp, duty_cycle, battery_voltage):
+    """Print CPU temperature, fan duty cycle, and battery voltage to the console."""
+    console_entry = (
+        f"[TEMP: {cpu_temp:.1f}°C] [FAN: {round(duty_cycle)}%] [{battery_voltage:.2f}V]"
+    )
     print(console_entry)
 
 
@@ -106,12 +129,15 @@ try:
         current_duty_cycle = calculate_fan_speed(avg_cpu_temp)
         fan_pwm.ChangeDutyCycle(current_duty_cycle)
 
-        # Print temperature and fan speed to console every second
-        print_to_console(avg_cpu_temp, current_duty_cycle)
+        # Read battery voltage
+        battery_voltage = read_battery_voltage()
 
-        # Log the temperature and fan speed to the file every 60 seconds
+        # Print temperature, fan speed, and battery voltage to console every second
+        print_to_console(avg_cpu_temp, current_duty_cycle, battery_voltage)
+
+        # Log the temperature, fan speed, and battery voltage to the file every 60 seconds
         if time.time() - last_log_time >= 60:
-            log_temperature(avg_cpu_temp, current_duty_cycle)
+            log_temperature(avg_cpu_temp, current_duty_cycle, battery_voltage)
             last_log_time = time.time()
 
         # Sleep for 1 second before the next reading
