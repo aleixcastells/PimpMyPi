@@ -4,7 +4,6 @@ from datetime import datetime
 import pytz
 import RPi.GPIO as GPIO
 import numpy as np
-
 import board
 import busio
 import adafruit_ads1x15.ads1115 as ADS
@@ -64,10 +63,10 @@ def read_battery_voltage():
 
 # Temperature thresholds (in degrees Celsius)
 MIN_TEMP = 35.0  # Minimum temperature to start increasing fan speed
-MAX_TEMP = 45.0  # Maximum temperature to reach maximum fan speed
+MAX_TEMP = 50.0  # Maximum temperature to reach maximum fan speed
 
 # Duty cycle thresholds (in percentage)
-MIN_DUTY_CYCLE = 10.0  # Minimum duty cycle (fan speed)
+MIN_DUTY_CYCLE = 5.0  # Minimum duty cycle (fan speed)
 MAX_DUTY_CYCLE = 100.0  # Maximum duty cycle (fan speed)
 
 
