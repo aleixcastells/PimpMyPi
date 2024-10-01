@@ -51,8 +51,8 @@ def get_cpu_temperature():
 
 # Read the battery voltage
 def read_battery_voltage():
-    R1 = 10000.0  # Ohms (10K)
-    R2 = 3300.0  # Ohms (3.3K)
+    R1 = 9900.0  # Ohms (10K)
+    R2 = 3333.0  # Ohms (3.3K)
     voltage_divider_ratio = (R1 + R2) / R2
 
     Vout = chan.voltage  # Voltage at the ADC input
