@@ -115,7 +115,7 @@ def log_temperature(cpu_temp, duty_cycle, battery_voltage):
 
 
 def print_to_console(cpu_temp, duty_cycle, battery_voltage):
-    console_entry = f"T[{cpu_temp:.1f}] — F[{round(duty_cycle)}] — V[{battery_voltage:.2f}] — B1[{BTN_1}] — B2[{BTN_2}]"
+    console_entry = f"T[{cpu_temp:.1f}] — F[{round(duty_cycle)}] — V[{battery_voltage:.2f}] — B1[{BTN_1}] — B2[{BTN_2}] — L1[{led1_state}] — L2[{led2_state}]"
     print(console_entry)
 
 
@@ -126,7 +126,7 @@ def control_leds(cpu_temp, battery_voltage):
     current_time = time.time()
 
     # LED 1 blinking (overheat)
-    if cpu_temp >= 50.0:
+    if cpu_temp >= 38.0:
         # Check if it's time to toggle the LED
         if current_time - led1_last_toggle_time >= led_blink_interval:
             # Toggle LED 1
