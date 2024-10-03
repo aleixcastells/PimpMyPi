@@ -14,14 +14,33 @@ timezone = pytz.timezone("Europe/Madrid")
 
 # Set pins
 FAN_PIN = 17
-LED_1_PIN = None
-LED_2_PIN = None
-BTN_1_PIN = None
-BTN_2_PIN = None
+LED_1_PIN = 23  # LED 1 connected to GPIO pin 23
+LED_2_PIN = 24  # LED 2 connected to GPIO pin 24
+BTN_1_PIN = 27  # Button 1 connected to GPIO pin 27
+BTN_2_PIN = 22  # Button 2 connected to GPIO pin 22
 
 # Set up GPIO for fan control
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(FAN_PIN, GPIO.OUT)
+
+# Set up GPIO for LEDs
+GPIO.setup(LED_1_PIN, GPIO.OUT)
+GPIO.setup(LED_2_PIN, GPIO.OUT)
+
+# Set up GPIO for buttons with pull-down resistors
+GPIO.setup(BTN_1_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(BTN_2_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+# Initialize variables for LED blinking
+led1_state = False
+led2_state = False
+led1_last_toggle_time = 0
+led2_last_toggle_time = 0
+led_blink_interval = 0.5  # Blink interval in seconds
+
+# Initialize variables for button states
+BTN_1 = False
+BTN_2 = False
 
 # Set up PWM for fan control
 pwm_frequency = 25  # 25Hz for fans
@@ -97,10 +116,41 @@ def log_temperature(cpu_temp, duty_cycle, battery_voltage):
 
 def print_to_console(cpu_temp, duty_cycle, battery_voltage):
     """Print CPU temperature, fan duty cycle, and battery voltage to the console."""
-    console_entry = (
-        f"[TEMP: {cpu_temp:.1f}°C] [FAN: {round(duty_cycle)}%] [{battery_voltage:.2f}V]"
-    )
+    console_entry = f"[T: {cpu_temp:.1f}] [F: {round(duty_cycle)}] [V: {battery_voltage:.2f}] [B1: {BTN_1}] [B2: {BTN_2}]"
     print(console_entry)
+
+
+# Function to control LEDs based on temperature and battery voltage
+def control_leds(cpu_temp, battery_voltage):
+    global led1_state, led2_state
+    global led1_last_toggle_time, led2_last_toggle_time
+    current_time = time.time()
+
+    # LED 1 blinking (overheat)
+    if cpu_temp >= 50.0:
+        # Check if it's time to toggle the LED
+        if current_time - led1_last_toggle_time >= led_blink_interval:
+            # Toggle LED 1
+            led1_state = not led1_state
+            GPIO.output(LED_1_PIN, led1_state)
+            led1_last_toggle_time = current_time
+    else:
+        # Ensure LED is off
+        led1_state = False
+        GPIO.output(LED_1_PIN, led1_state)
+
+    # LED 2 blinking (low battery)
+    if battery_voltage < 12.0:
+        # Check if it's time to toggle the LED
+        if current_time - led2_last_toggle_time >= led_blink_interval:
+            # Toggle LED 2
+            led2_state = not led2_state
+            GPIO.output(LED_2_PIN, led2_state)
+            led2_last_toggle_time = current_time
+    else:
+        # Ensure LED is off
+        led2_state = False
+        GPIO.output(LED_2_PIN, led2_state)
 
 
 # Initialize a list to store temperature readings
@@ -130,6 +180,13 @@ try:
 
         # Read battery voltage
         battery_voltage = read_battery_voltage()
+
+        # Control LEDs based on temperature and battery voltage
+        control_leds(avg_cpu_temp, battery_voltage)
+
+        # Read button states
+        BTN_1 = GPIO.input(BTN_1_PIN)
+        BTN_2 = GPIO.input(BTN_2_PIN)
 
         # Print temperature, fan speed, and battery voltage to console every second
         print_to_console(avg_cpu_temp, current_duty_cycle, battery_voltage)
