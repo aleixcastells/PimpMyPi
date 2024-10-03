@@ -115,8 +115,7 @@ def log_temperature(cpu_temp, duty_cycle, battery_voltage):
 
 
 def print_to_console(cpu_temp, duty_cycle, battery_voltage):
-    """Print CPU temperature, fan duty cycle, and battery voltage to the console."""
-    console_entry = f"[T: {cpu_temp:.1f}] [F: {round(duty_cycle)}] [V: {battery_voltage:.2f}] [B1: {BTN_1}] [B2: {BTN_2}]"
+    console_entry = f"T: {cpu_temp:.1f} — F: {round(duty_cycle)} — V: {battery_voltage:.2f} — B1: {BTN_1} — B2: {BTN_2}"
     print(console_entry)
 
 
