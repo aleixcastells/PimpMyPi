@@ -144,7 +144,7 @@ def log_status(cpu_temp, duty_cycle, battery_voltage):
 
 
 def print_to_console(cpu_temp, duty_cycle, battery_voltage):
-    console_entry = f"TEMP[{cpu_temp:.1f}] — FAN[{round(duty_cycle)}%] — VOLT[{battery_voltage:.2f}] — BTNS[{BTN_1},{BTN_2}] — LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]"
+    console_entry = f"TEMP[{cpu_temp:.1f}]  FAN[{round(duty_cycle)}%]  VOLT[{battery_voltage:.2f}]  BTNS[{BTN_1},{BTN_2}]  LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]"
     print(console_entry)
 
 
