@@ -8,8 +8,9 @@ import board
 import busio
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
-import json  # Import the json module
-from dotenv import load_dotenv  # Import dotenv
+import json
+from dotenv import load_dotenv
+import csv
 
 # Load environment variables from .env file
 load_dotenv()
@@ -129,7 +130,7 @@ def calculate_fan_speed(cpu_temp):
 
 
 # Log CPU temperature, fan duty cycle, and battery voltage to a daily log file.
-def log_status(cpu_temp, duty_cycle, battery_voltage):
+def log_status(cpu_temp, duty_cycle, battery_voltage, csv_writer):
     now = datetime.now(timezone)
     date_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H:%M:%S")
@@ -139,12 +140,27 @@ def log_status(cpu_temp, duty_cycle, battery_voltage):
 
     # Create or append to the log file
     with open(log_file_path, "a") as log_file:
-        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}]  FAN[{round(duty_cycle)}%]  VOLT[{battery_voltage:.2f}]  BTNS[{BTN_1},{BTN_2}]  LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]\n"
+        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}] - FAN[{round(duty_cycle)}%] - VOLT[{battery_voltage:.2f}] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]\n"
         log_file.write(log_entry)
+
+    # Prepare data for CSV
+    csv_data = {
+        "Timestamp": time_str,
+        "Temperature_C": cpu_temp,
+        "Fan_Duty_Cycle_%": round(duty_cycle),
+        "Battery_Voltage_V": battery_voltage,
+        "Button_1": BTN_1,
+        "Button_2": BTN_2,
+        "LED_1_State": int(cpu_temp >= MAX_TEMP),
+        "LED_2_State": int(battery_voltage < MIN_VOLTS),
+    }
+
+    # Write to CSV
+    csv_writer.writerow(csv_data)
 
 
 def print_to_console(cpu_temp, duty_cycle, battery_voltage):
-    console_entry = f"TEMP[{cpu_temp:.1f}]  FAN[{round(duty_cycle)}%]  VOLT[{battery_voltage:.2f}]  BTNS[{BTN_1},{BTN_2}]  LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]"
+    console_entry = f"TEMP[{cpu_temp:.1f}] - FAN[{round(duty_cycle)}%] - VOLT[{battery_voltage:.2f}] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]"
     print(console_entry)
 
 
@@ -185,6 +201,32 @@ def control_leds(cpu_temp, battery_voltage):
 last_temps = []
 N = 3  # Number of readings to average
 
+# Initialize CSV writer (will be updated inside the loop)
+csv_writer = None
+
+
+# Function to initialize CSV file
+def initialize_csv(csv_file_path):
+    file_exists = os.path.isfile(csv_file_path)
+    csv_file = open(csv_file_path, mode="a", newline="")
+    fieldnames = [
+        "Timestamp",
+        "Temperature_C",
+        "Fan_Duty_Cycle_%",
+        "Battery_Voltage_V",
+        "Button_1",
+        "Button_2",
+        "LED_1_State",
+        "LED_2_State",
+    ]
+    writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+
+    if not file_exists:
+        writer.writeheader()
+
+    return csv_file, writer
+
+
 try:
     last_log_time = time.time()  # Keep track of when to log to the file
 
@@ -220,17 +262,31 @@ try:
         BTN_1_state = bool(BTN_1)
         BTN_2_state = bool(BTN_2)
 
-        # Update buttons.json
-        with open(buttons_json_path, "w") as f:
-            json.dump({"buttons": [BTN_1_state, BTN_2_state]}, f)
-
         # Print temperature, fan speed, and battery voltage to console every second
         print_to_console(avg_cpu_temp, current_duty_cycle, battery_voltage)
 
-        # Log the temperature, fan speed, and battery voltage to the file every 60 seconds
+        # Log the temperature, fan speed, and battery voltage to the file and CSV every 60 seconds
         if time.time() - last_log_time >= 60:
-            log_status(avg_cpu_temp, current_duty_cycle, battery_voltage)
+            # Determine log file and CSV file paths
+            now = datetime.now(timezone)
+            date_str = now.strftime("%Y-%m-%d")
+            log_file_path = os.path.join(log_folder, f"{date_str}.log")
+            csv_file_path = os.path.join(log_folder, f"{date_str}.csv")
+
+            # Initialize CSV writer
+            csv_file, csv_writer = initialize_csv(csv_file_path)
+
+            # Log status to both log file and CSV
+            log_status(avg_cpu_temp, current_duty_cycle, battery_voltage, csv_writer)
+
+            # Close the CSV file after writing
+            csv_file.close()
+
             last_log_time = time.time()
+
+        # Update buttons.json every second
+        with open(buttons_json_path, "w") as f:
+            json.dump({"buttons": [BTN_1_state, BTN_2_state]}, f)
 
         # Sleep for 1 second before the next reading
         time.sleep(1)
