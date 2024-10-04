@@ -305,7 +305,7 @@ try:
         battery_voltage = read_battery_voltage()
 
         # Calculate battery charge percentage
-        battery_charge = calculate_battery_charge(battery_voltage)
+        battery_charge = battery_charge(battery_voltage)
 
         # Control LEDs based on temperature and battery voltage
         control_leds(avg_cpu_temp, battery_voltage)
