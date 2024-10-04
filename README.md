@@ -12,10 +12,12 @@ BTN_2_PIN=22
 
 # Voltage Threshold
 MIN_VOLTS=12
+HIGH_VOLTS=12.2
+LOW_VOLTS=10.9
 
-# Temperature Thresholds (°C)
+# Temperature Thresholds (  C)
 MIN_TEMP=35.0
-MAX_TEMP=50.0
+MAX_TEMP=45.0
 
 # Duty Cycle Thresholds (%)
 MIN_DUTY_CYCLE=20.0
