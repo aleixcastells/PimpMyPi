@@ -27,8 +27,9 @@ LED_2_PIN = int(os.getenv("LED_2_PIN", 24))
 BTN_1_PIN = int(os.getenv("BTN_1_PIN", 27))
 BTN_2_PIN = int(os.getenv("BTN_2_PIN", 22))
 
-# Voltage threshold
+# Voltage thresholds
 MIN_VOLTS = float(os.getenv("MIN_VOLTS", 12))
+LOW_VOLTS = float(os.getenv("LOW_VOLTS", 10.9))  # Voltage threshold for shutdown
 
 # Temperature thresholds (in degrees Celsius)
 MIN_TEMP = float(os.getenv("MIN_TEMP", 30.0))
@@ -44,6 +45,10 @@ BLINK_INTERVAL = float(os.getenv("BLINK_INTERVAL", 0.5))
 # Resistor settings
 R1_VALUE = float(os.getenv("R1_VALUE", 10000.0))  # Ohms (10K)
 R2_VALUE = float(os.getenv("R2_VALUE", 3300.0))  # Ohms (3.3K)
+
+# Battery voltage range for charge percentage calculation
+V_MIN = LOW_VOLTS  # 10.9V corresponds to 0%
+V_MAX = MIN_VOLTS  # 12.0V corresponds to 100%
 
 # - - - - - - -
 
@@ -119,6 +124,17 @@ def read_battery_voltage():
     return Vin
 
 
+# Calculate battery charge percentage
+def battery_charge(voltage, v_min=V_MIN, v_max=V_MAX):
+    if voltage <= v_min:
+        return 0
+    elif voltage >= v_max:
+        return 100
+    else:
+        charge = (voltage - v_min) / (v_max - v_min) * 100
+        return int(charge)
+
+
 def calculate_fan_speed(cpu_temp):
     if cpu_temp > MAX_TEMP:
         return MAX_DUTY_CYCLE
@@ -130,7 +146,7 @@ def calculate_fan_speed(cpu_temp):
 
 
 # Log CPU temperature, fan duty cycle, and battery voltage to a daily log file.
-def log_status(cpu_temp, duty_cycle, battery_voltage, csv_writer):
+def log_status(cpu_temp, duty_cycle, battery_voltage, battery_charge, csv_writer):
     now = datetime.now(timezone)
     date_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H:%M:%S")
@@ -140,7 +156,7 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, csv_writer):
 
     # Create or append to the log file
     with open(log_file_path, "a") as log_file:
-        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}] - FAN[{round(duty_cycle)}%] - VOLT[{battery_voltage:.2f}] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]\n"
+        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}] - FAN[{round(duty_cycle)}%] - BAT[{battery_voltage:.2f}V,{battery_charge(battery_voltage)}%] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]\n"
         log_file.write(log_entry)
 
     # Prepare data for CSV
@@ -149,6 +165,7 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, csv_writer):
         "Temperature_C": cpu_temp,
         "Fan_Duty_Cycle_%": round(duty_cycle),
         "Battery_Voltage_V": battery_voltage,
+        "Battery_Charge_%": battery_charge,
         "Button_1": BTN_1,
         "Button_2": BTN_2,
         "LED_1_State": int(cpu_temp >= MAX_TEMP),
@@ -159,8 +176,8 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, csv_writer):
     csv_writer.writerow(csv_data)
 
 
-def print_to_console(cpu_temp, duty_cycle, battery_voltage):
-    console_entry = f"TEMP[{cpu_temp:.1f}] - FAN[{round(duty_cycle)}%] - VOLT[{battery_voltage:.2f}] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]"
+def print_to_console(cpu_temp, duty_cycle, battery_voltage, battery_charge):
+    console_entry = f"TEMP[{cpu_temp:.1f}°C] - FAN[{round(duty_cycle)}%] - BAT[{battery_voltage:.2f}V,{battery_charge(battery_voltage)}%] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]"
     print(console_entry)
 
 
@@ -214,6 +231,7 @@ def initialize_csv(csv_file_path):
         "Temperature_C",
         "Fan_Duty_Cycle_%",
         "Battery_Voltage_V",
+        "Battery_Charge_%",
         "Button_1",
         "Button_2",
         "LED_1_State",
@@ -228,7 +246,7 @@ def initialize_csv(csv_file_path):
 
 
 # Function to handle low voltage scenarios
-def handle_low_voltage(battery_voltage, csv_writer):
+def handle_low_voltage(battery_voltage, battery_charge, csv_writer):
     print("Battery voltage below 10.9V! Initiating shutdown...")
     # Log the low voltage event
     now = datetime.now(timezone)
@@ -236,7 +254,7 @@ def handle_low_voltage(battery_voltage, csv_writer):
     time_str = now.strftime("%H:%M:%S")
     log_file_path = os.path.join(log_folder, f"{date_str}.log")
     with open(log_file_path, "a") as log_file:
-        log_entry = f"[{time_str}] LOW VOLTAGE DETECTED: VOLTAGE[{battery_voltage:.2f}V]. SYSTEM SHUTTING DOWN.\n"
+        log_entry = f"[{time_str}] LOW VOLTAGE DETECTED: VOLTAGE[{battery_voltage:.2f}V] - CHARGE[{battery_charge}%]. SYSTEM SHUTTING DOWN.\n"
         log_file.write(log_entry)
 
     # Prepare data for CSV
@@ -245,6 +263,7 @@ def handle_low_voltage(battery_voltage, csv_writer):
         "Temperature_C": "N/A",
         "Fan_Duty_Cycle_%": "N/A",
         "Battery_Voltage_V": battery_voltage,
+        "Battery_Charge_%": battery_charge,
         "Button_1": BTN_1,
         "Button_2": BTN_2,
         "LED_1_State": "N/A",
@@ -285,6 +304,9 @@ try:
         # Read battery voltage
         battery_voltage = read_battery_voltage()
 
+        # Calculate battery charge percentage
+        battery_charge = calculate_battery_charge(battery_voltage)
+
         # Control LEDs based on temperature and battery voltage
         control_leds(avg_cpu_temp, battery_voltage)
 
@@ -300,11 +322,13 @@ try:
         with open(buttons_json_path, "w") as f:
             json.dump({"buttons": [BTN_1_state, BTN_2_state]}, f)
 
-        # Print temperature, fan speed, and battery voltage to console every second
-        print_to_console(avg_cpu_temp, current_duty_cycle, battery_voltage)
+        # Print temperature, fan speed, battery voltage, and charge to console every second
+        print_to_console(
+            avg_cpu_temp, current_duty_cycle, battery_voltage, battery_charge
+        )
 
         # Check for low voltage and handle shutdown if necessary
-        if battery_voltage < 10.9 and not low_voltage_triggered:
+        if battery_voltage < LOW_VOLTS and not low_voltage_triggered:
             # Determine log file and CSV file paths
             now = datetime.now(timezone)
             date_str = now.strftime("%Y-%m-%d")
@@ -315,7 +339,7 @@ try:
             csv_file, csv_writer = initialize_csv(csv_file_path)
 
             # Handle low voltage (shutdown)
-            handle_low_voltage(battery_voltage, csv_writer)
+            handle_low_voltage(battery_voltage, battery_charge, csv_writer)
 
             # Close the CSV file after writing (although shutdown will stop the script)
             csv_file.close()
@@ -323,7 +347,7 @@ try:
             # Set the flag to prevent multiple shutdowns
             low_voltage_triggered = True
 
-        # Log the temperature, fan speed, and battery voltage to the file and CSV every 60 seconds
+        # Log the temperature, fan speed, battery voltage, and charge to the file and CSV every 60 seconds
         if time.time() - last_log_time >= 60:
             # Determine log file and CSV file paths
             now = datetime.now(timezone)
@@ -335,7 +359,13 @@ try:
             csv_file, csv_writer = initialize_csv(csv_file_path)
 
             # Log status to both log file and CSV
-            log_status(avg_cpu_temp, current_duty_cycle, battery_voltage, csv_writer)
+            log_status(
+                avg_cpu_temp,
+                current_duty_cycle,
+                battery_voltage,
+                battery_charge,
+                csv_writer,
+            )
 
             # Close the CSV file after writing
             csv_file.close()
