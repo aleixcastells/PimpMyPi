@@ -139,7 +139,7 @@ def log_status(cpu_temp, duty_cycle, battery_voltage):
 
     # Create or append to the log file
     with open(log_file_path, "a") as log_file:
-        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}] — FAN[{round(duty_cycle)}%] — VOLT[{battery_voltage:.2f}] — BTNS[{BTN_1},{BTN_2}] — LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]\n"
+        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}]  FAN[{round(duty_cycle)}%]  VOLT[{battery_voltage:.2f}]  BTNS[{BTN_1},{BTN_2}]  LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]\n"
         log_file.write(log_entry)
 
 
