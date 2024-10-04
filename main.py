@@ -227,8 +227,42 @@ def initialize_csv(csv_file_path):
     return csv_file, writer
 
 
+# Function to handle low voltage scenarios
+def handle_low_voltage(battery_voltage, csv_writer):
+    print("Battery voltage below 10.9V! Initiating shutdown...")
+    # Log the low voltage event
+    now = datetime.now(timezone)
+    date_str = now.strftime("%Y-%m-%d")
+    time_str = now.strftime("%H:%M:%S")
+    log_file_path = os.path.join(log_folder, f"{date_str}.log")
+    with open(log_file_path, "a") as log_file:
+        log_entry = f"[{time_str}] LOW VOLTAGE DETECTED: VOLTAGE[{battery_voltage:.2f}V]. SYSTEM SHUTTING DOWN.\n"
+        log_file.write(log_entry)
+
+    # Prepare data for CSV
+    csv_data = {
+        "Timestamp": time_str,
+        "Temperature_C": "N/A",
+        "Fan_Duty_Cycle_%": "N/A",
+        "Battery_Voltage_V": battery_voltage,
+        "Button_1": BTN_1,
+        "Button_2": BTN_2,
+        "LED_1_State": "N/A",
+        "LED_2_State": "N/A",
+    }
+
+    # Write to CSV
+    csv_writer.writerow(csv_data)
+
+    # Execute system shutdown
+    os.system("sudo shutdown -h now")
+
+
 try:
     last_log_time = time.time()  # Keep track of when to log to the file
+
+    # Flag to ensure shutdown is triggered only once
+    low_voltage_triggered = False
 
     while True:
         # Read the CPU temperature
@@ -262,8 +296,32 @@ try:
         BTN_1_state = bool(BTN_1)
         BTN_2_state = bool(BTN_2)
 
+        # Update buttons.json
+        with open(buttons_json_path, "w") as f:
+            json.dump({"buttons": [BTN_1_state, BTN_2_state]}, f)
+
         # Print temperature, fan speed, and battery voltage to console every second
         print_to_console(avg_cpu_temp, current_duty_cycle, battery_voltage)
+
+        # Check for low voltage and handle shutdown if necessary
+        if battery_voltage < 10.9 and not low_voltage_triggered:
+            # Determine log file and CSV file paths
+            now = datetime.now(timezone)
+            date_str = now.strftime("%Y-%m-%d")
+            log_file_path = os.path.join(log_folder, f"{date_str}.log")
+            csv_file_path = os.path.join(log_folder, f"{date_str}.csv")
+
+            # Initialize CSV writer
+            csv_file, csv_writer = initialize_csv(csv_file_path)
+
+            # Handle low voltage (shutdown)
+            handle_low_voltage(battery_voltage, csv_writer)
+
+            # Close the CSV file after writing (although shutdown will stop the script)
+            csv_file.close()
+
+            # Set the flag to prevent multiple shutdowns
+            low_voltage_triggered = True
 
         # Log the temperature, fan speed, and battery voltage to the file and CSV every 60 seconds
         if time.time() - last_log_time >= 60:
@@ -283,10 +341,6 @@ try:
             csv_file.close()
 
             last_log_time = time.time()
-
-        # Update buttons.json every second
-        with open(buttons_json_path, "w") as f:
-            json.dump({"buttons": [BTN_1_state, BTN_2_state]}, f)
 
         # Sleep for 1 second before the next reading
         time.sleep(1)
