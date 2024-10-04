@@ -125,7 +125,7 @@ def read_battery_voltage():
 
 
 # Calculate battery charge percentage
-def battery_charge(voltage, v_min=V_MIN, v_max=V_MAX):
+def calculate_battery_charge(voltage, v_min=V_MIN, v_max=V_MAX):
     if voltage <= v_min:
         return 0
     elif voltage >= v_max:
@@ -156,7 +156,7 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, battery_charge, csv_writer
 
     # Create or append to the log file
     with open(log_file_path, "a") as log_file:
-        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}] - FAN[{round(duty_cycle)}%] - BAT[{battery_voltage:.2f}V,{battery_charge(battery_voltage)}%] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]\n"
+        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}] - FAN[{round(duty_cycle)}%] - BAT[{battery_voltage:.2f}V,{calculate_battery_charge(battery_voltage)}%] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]\n"
         log_file.write(log_entry)
 
     # Prepare data for CSV
@@ -177,7 +177,7 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, battery_charge, csv_writer
 
 
 def print_to_console(cpu_temp, duty_cycle, battery_voltage, battery_charge):
-    console_entry = f"TEMP[{cpu_temp:.1f}°C] - FAN[{round(duty_cycle)}%] - BAT[{battery_voltage:.2f}V,{battery_charge(battery_voltage)}%] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]"
+    console_entry = f"TEMP[{cpu_temp:.1f}°C] - FAN[{round(duty_cycle)}%] - BAT[{battery_voltage:.2f}V,{calculate_battery_charge(battery_voltage)}%] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]"
     print(console_entry)
 
 
@@ -305,7 +305,7 @@ try:
         battery_voltage = read_battery_voltage()
 
         # Calculate battery charge percentage
-        battery_charge = battery_charge(battery_voltage)
+        battery_charge = calculate_battery_charge(battery_voltage)
 
         # Control LEDs based on temperature and battery voltage
         control_leds(avg_cpu_temp, battery_voltage)
