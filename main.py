@@ -128,8 +128,6 @@ def read_battery_voltage():
 def calculate_battery_charge(voltage, v_min=V_MIN, v_max=V_MAX):
     if voltage <= v_min:
         return 0
-    elif voltage >= v_max:
-        return 100
     else:
         charge = (voltage - v_min) / (v_max - v_min) * 100
         return int(charge)
