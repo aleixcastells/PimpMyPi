@@ -29,7 +29,8 @@ BTN_2_PIN = int(os.getenv("BTN_2_PIN", 22))
 
 # Voltage thresholds
 MIN_VOLTS = float(os.getenv("MIN_VOLTS", 12))
-LOW_VOLTS = float(os.getenv("LOW_VOLTS", 10.9))  # Voltage threshold for shutdown
+HIGH_VOLTS = float(os.getenv("HIGH_VOLTS", 12.6))  # Max Voltage
+LOW_VOLTS = float(os.getenv("LOW_VOLTS", 10.8))  # Min Voltage
 
 # Temperature thresholds (in degrees Celsius)
 MIN_TEMP = float(os.getenv("MIN_TEMP", 30.0))
@@ -47,8 +48,8 @@ R1_VALUE = float(os.getenv("R1_VALUE", 10000.0))  # Ohms (10K)
 R2_VALUE = float(os.getenv("R2_VALUE", 3300.0))  # Ohms (3.3K)
 
 # Battery voltage range for charge percentage calculation
-V_MIN = LOW_VOLTS  # 10.9V corresponds to 0%
-V_MAX = MIN_VOLTS  # 12.0V corresponds to 100%
+V_MIN = LOW_VOLTS  # 0%
+V_MAX = HIGH_VOLTS  # 100%
 
 # - - - - - - -
 
