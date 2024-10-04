@@ -110,7 +110,7 @@ def log_temperature(cpu_temp, duty_cycle, battery_voltage):
 
     # Create or append to the log file
     with open(log_file_path, "a") as log_file:
-        log_entry = f"[{time_str}] Temp: {cpu_temp:.1f}°C, Fan: {round(duty_cycle)}%, Battery: {battery_voltage:.2f}V\n"
+        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}] — FAN[{round(duty_cycle)}%] — VOLT[{battery_voltage:.2f}] — BTNS[{BTN_1}, {BTN_2}] — LEDS[{int(cpu_temp >= MAX_TEMP)}, {int(battery_voltage < 12)}]V\n"
         log_file.write(log_entry)
 
 
