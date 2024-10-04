@@ -115,7 +115,7 @@ def log_temperature(cpu_temp, duty_cycle, battery_voltage):
 
 
 def print_to_console(cpu_temp, duty_cycle, battery_voltage):
-    console_entry = f"T[{cpu_temp:.1f}] — F[{round(duty_cycle)}%] — V[{battery_voltage:.2f}] — B1[{BTN_1}] — B2[{BTN_2}] — L1[{int(led1_state)}] — L2[{int(led2_state)}]"
+    console_entry = f"T[{cpu_temp:.1f}] — F[{round(duty_cycle)}%] — V[{battery_voltage:.2f}] — B1[{BTN_1}] — B2[{BTN_2}] — L1[{int(cpu_temp >= MAX_TEMP)}] — L2[{int(battery_voltage < 12)}]"
     print(console_entry)
 
 
