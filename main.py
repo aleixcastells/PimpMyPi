@@ -12,12 +12,34 @@ from adafruit_ads1x15.analog_in import AnalogIn
 # Time zone for Spain
 timezone = pytz.timezone("Europe/Madrid")
 
+### SETTINGS - - - - - - -
+
 # Set pins
-FAN_PIN = 17
-LED_1_PIN = 23  # LED 1 connected to GPIO pin 23
-LED_2_PIN = 24  # LED 2 connected to GPIO pin 24
-BTN_1_PIN = 27  # Button 1 connected to GPIO pin 27
-BTN_2_PIN = 22  # Button 2 connected to GPIO pin 22
+FAN_PIN = 17  # FAN connected to GPIO pin
+LED_1_PIN = 23  # LED 1 connected to GPIO pin
+LED_2_PIN = 24  # LED 2 connected to GPIO pin
+BTN_1_PIN = 27  # Button 1 connected to GPIO pin
+BTN_2_PIN = 22  # Button 2 connected to GPIO pin
+
+# Voltage threshold
+MIN_VOLTS = 12
+
+# Temperature thresholds (in degrees Celsius)
+MIN_TEMP = 35.0  # Minimum temperature to start increasing fan speed
+MAX_TEMP = 50.0  # Maximum temperature to reach maximum fan speed
+
+# Duty cycle thresholds (in percentage)
+MIN_DUTY_CYCLE = 20.0  # Minimum duty cycle (fan speed)
+MAX_DUTY_CYCLE = 100.0  # Maximum duty cycle (fan speed)
+
+# LED settings
+BLINK_INTERVAL = 0.5
+
+# Resistor settings
+R1_VALUE = 9900.0  # Ohms (10K)
+R2_VALUE = 3333.3  # Ohms (3.3K)
+
+# - - - - - - -
 
 # Set up GPIO for fan control
 GPIO.setmode(GPIO.BCM)
@@ -36,7 +58,7 @@ led1_state = False
 led2_state = False
 led1_last_toggle_time = 0
 led2_last_toggle_time = 0
-led_blink_interval = 0.5  # Blink interval in seconds
+led_blink_interval = BLINK_INTERVAL  # Blink interval in seconds
 
 # Initialize variables for button states
 BTN_1 = False
@@ -70,23 +92,14 @@ def get_cpu_temperature():
 
 # Read the battery voltage
 def read_battery_voltage():
-    R1 = 9900.0  # Ohms (10K)
-    R2 = 3333.0  # Ohms (3.3K)
+    R1 = R1_VALUE
+    R2 = R2_VALUE
     voltage_divider_ratio = (R1 + R2) / R2
 
     Vout = chan.voltage  # Voltage at the ADC input
     Vin = Vout * voltage_divider_ratio
 
     return Vin
-
-
-# Temperature thresholds (in degrees Celsius)
-MIN_TEMP = 35.0  # Minimum temperature to start increasing fan speed
-MAX_TEMP = 50.0  # Maximum temperature to reach maximum fan speed
-
-# Duty cycle thresholds (in percentage)
-MIN_DUTY_CYCLE = 20.0  # Minimum duty cycle (fan speed)
-MAX_DUTY_CYCLE = 100.0  # Maximum duty cycle (fan speed)
 
 
 def calculate_fan_speed(cpu_temp):
@@ -139,7 +152,7 @@ def control_leds(cpu_temp, battery_voltage):
         GPIO.output(LED_1_PIN, led1_state)
 
     # LED 2 blinking (low battery)
-    if battery_voltage < 12.0:
+    if battery_voltage < MIN_VOLTS:
         # Check if it's time to toggle the LED
         if current_time - led2_last_toggle_time >= led_blink_interval:
             # Toggle LED 2
