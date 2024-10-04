@@ -8,6 +8,7 @@ import board
 import busio
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
+import json  # Import the json module
 
 # Time zone for Spain
 timezone = pytz.timezone("Europe/Madrid")
@@ -82,6 +83,17 @@ ads.gain = 1  # Gain setting for the ADC (+/-4.096V)
 # Create single-ended input on channel 0
 chan = AnalogIn(ads, ADS.P0)
 
+# Path to the script directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Path to buttons.json
+buttons_json_path = os.path.join(script_dir, "buttons.json")
+
+# If buttons.json doesn't exist, create it with initial values
+if not os.path.exists(buttons_json_path):
+    with open(buttons_json_path, "w") as f:
+        json.dump({"buttons": [False, False]}, f)
+
 
 # Read the CPU temperature from the system.
 def get_cpu_temperature():
@@ -113,7 +125,7 @@ def calculate_fan_speed(cpu_temp):
 
 
 # Log CPU temperature, fan duty cycle, and battery voltage to a daily log file.
-def log_temperature(cpu_temp, duty_cycle, battery_voltage):
+def log_status(cpu_temp, duty_cycle, battery_voltage):
     now = datetime.now(timezone)
     date_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H:%M:%S")
@@ -123,12 +135,12 @@ def log_temperature(cpu_temp, duty_cycle, battery_voltage):
 
     # Create or append to the log file
     with open(log_file_path, "a") as log_file:
-        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}] — FAN[{round(duty_cycle)}%] — VOLT[{battery_voltage:.2f}] — BTNS[{BTN_1},{BTN_2}] — LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < 12)}]V\n"
+        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}] — FAN[{round(duty_cycle)}%] — VOLT[{battery_voltage:.2f}] — BTNS[{BTN_1},{BTN_2}] — LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]\n"
         log_file.write(log_entry)
 
 
 def print_to_console(cpu_temp, duty_cycle, battery_voltage):
-    console_entry = f"TEMP[{cpu_temp:.1f}] — FAN[{round(duty_cycle)}%] — VOLT[{battery_voltage:.2f}] — BTNS[{BTN_1},{BTN_2}] — LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < 12)}]"
+    console_entry = f"TEMP[{cpu_temp:.1f}] — FAN[{round(duty_cycle)}%] — VOLT[{battery_voltage:.2f}] — BTNS[{BTN_1},{BTN_2}] — LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]"
     print(console_entry)
 
 
@@ -200,12 +212,20 @@ try:
         BTN_1 = GPIO.input(BTN_1_PIN)
         BTN_2 = GPIO.input(BTN_2_PIN)
 
+        # Convert button states to boolean
+        BTN_1_state = bool(BTN_1)
+        BTN_2_state = bool(BTN_2)
+
+        # Update buttons.json
+        with open(buttons_json_path, "w") as f:
+            json.dump({"buttons": [BTN_1_state, BTN_2_state]}, f)
+
         # Print temperature, fan speed, and battery voltage to console every second
         print_to_console(avg_cpu_temp, current_duty_cycle, battery_voltage)
 
         # Log the temperature, fan speed, and battery voltage to the file every 60 seconds
         if time.time() - last_log_time >= 60:
-            log_temperature(avg_cpu_temp, current_duty_cycle, battery_voltage)
+            log_status(avg_cpu_temp, current_duty_cycle, battery_voltage)
             last_log_time = time.time()
 
         # Sleep for 1 second before the next reading
