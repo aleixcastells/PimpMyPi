@@ -126,7 +126,7 @@ def control_leds(cpu_temp, battery_voltage):
     current_time = time.time()
 
     # LED 1 blinking (overheat)
-    if cpu_temp >= 38.0:
+    if cpu_temp >= MAX_TEMP:
         # Check if it's time to toggle the LED
         if current_time - led1_last_toggle_time >= led_blink_interval:
             # Toggle LED 1
