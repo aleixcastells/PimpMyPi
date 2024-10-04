@@ -9,36 +9,40 @@ import busio
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 import json  # Import the json module
+from dotenv import load_dotenv  # Import dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Time zone for Spain
 timezone = pytz.timezone("Europe/Madrid")
 
-### SETTINGS - - - - - - -
+### SETTINGS (CHANGE IN .env FILE) - - - - - - -
 
-# Set pins
-FAN_PIN = 17  # FAN connected to GPIO pin
-LED_1_PIN = 23  # LED 1 connected to GPIO pin
-LED_2_PIN = 24  # LED 2 connected to GPIO pin
-BTN_1_PIN = 27  # Button 1 connected to GPIO pin
-BTN_2_PIN = 22  # Button 2 connected to GPIO pin
+# Retrieve GPIO pin configurations
+FAN_PIN = int(os.getenv("FAN_PIN", 17))
+LED_1_PIN = int(os.getenv("LED_1_PIN", 23))
+LED_2_PIN = int(os.getenv("LED_2_PIN", 24))
+BTN_1_PIN = int(os.getenv("BTN_1_PIN", 27))
+BTN_2_PIN = int(os.getenv("BTN_2_PIN", 22))
 
 # Voltage threshold
-MIN_VOLTS = 12
+MIN_VOLTS = float(os.getenv("MIN_VOLTS", 12))
 
 # Temperature thresholds (in degrees Celsius)
-MIN_TEMP = 35.0  # Minimum temperature to start increasing fan speed
-MAX_TEMP = 50.0  # Maximum temperature to reach maximum fan speed
+MIN_TEMP = float(os.getenv("MIN_TEMP", 30.0))
+MAX_TEMP = float(os.getenv("MAX_TEMP", 50.0))
 
 # Duty cycle thresholds (in percentage)
-MIN_DUTY_CYCLE = 20.0  # Minimum duty cycle (fan speed)
-MAX_DUTY_CYCLE = 100.0  # Maximum duty cycle (fan speed)
+MIN_DUTY_CYCLE = float(os.getenv("MIN_DUTY_CYCLE", 40.0))
+MAX_DUTY_CYCLE = float(os.getenv("MAX_DUTY_CYCLE", 100.0))
 
 # LED settings
-BLINK_INTERVAL = 0.5
+BLINK_INTERVAL = float(os.getenv("BLINK_INTERVAL", 0.5))
 
 # Resistor settings
-R1_VALUE = 9900.0  # Ohms (10K)
-R2_VALUE = 3333.3  # Ohms (3.3K)
+R1_VALUE = float(os.getenv("R1_VALUE", 10000.0))  # Ohms (10K)
+R2_VALUE = float(os.getenv("R2_VALUE", 3300.0))  # Ohms (3.3K)
 
 # - - - - - - -
 
