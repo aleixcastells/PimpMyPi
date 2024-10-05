@@ -53,6 +53,11 @@ V_MAX = HIGH_VOLTS  # 100%
 
 # - - - - - - -
 
+# Debounce settings for low voltage detection
+LOW_VOLTAGE_COUNT = 0
+LOW_VOLTAGE_THRESHOLD = 5  # Number of consecutive low readings required
+CHECK_INTERVAL = 1  # Interval in seconds between checks
+
 # Set up GPIO for fan control
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(FAN_PIN, GPIO.OUT)
@@ -86,13 +91,15 @@ log_folder = os.path.join(os.getcwd(), "logs")
 if not os.path.exists(log_folder):
     os.makedirs(log_folder)
 
-# Initialize I2C bus and ADC
-i2c = busio.I2C(board.SCL, board.SDA)
-ads = ADS.ADS1115(i2c)
-ads.gain = 1  # Gain setting for the ADC (+/-4.096V)
-
-# Create single-ended input on channel 0
-chan = AnalogIn(ads, ADS.P0)
+# Initialize I2C bus and ADC with error handling
+try:
+    i2c = busio.I2C(board.SCL, board.SDA)
+    ads = ADS.ADS1115(i2c)
+    ads.gain = 1  # Gain setting for the ADC (+/-4.096V)
+    chan = AnalogIn(ads, ADS.P0)
+    print("[INFO] ADC initialized successfully.")
+except Exception as e:
+    print(f"[ERROR] Failed to initialize ADC: {e}")
 
 # Path to the script directory
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -221,6 +228,7 @@ N = 3  # Number of readings to average
 
 # Initialize CSV writer (will be updated inside the loop)
 csv_writer = None
+csv_file = None  # Initialize csv_file for scope
 
 
 # Function to initialize CSV file
@@ -248,7 +256,7 @@ def initialize_csv(csv_file_path):
 
 # Function to handle low voltage scenarios
 def handle_low_voltage(battery_voltage, battery_charge, csv_writer):
-    print("Battery voltage below 10.9V! Initiating shutdown...")
+    print("Battery voltage below 10.8V! Initiating shutdown...")
     # Log the low voltage event
     now = datetime.now(timezone)
     date_str = now.strftime("%Y-%m-%d")
@@ -279,13 +287,26 @@ def handle_low_voltage(battery_voltage, battery_charge, csv_writer):
 
 
 try:
+    # 1. **Initial Startup Delay**
+    print("[INFO] System is starting up. Waiting for voltage stabilization...")
+    time.sleep(5)  # Wait for 5 seconds
+    print("[INFO] Starting main loop.")
+
     last_log_time = time.time()  # Keep track of when to log to the file
 
     # Flag to ensure shutdown is triggered only once
     low_voltage_triggered = False
 
     while True:
-        # Read the CPU temperature
+        # 2. **Read battery voltage with debug statements**
+        battery_voltage = read_battery_voltage()
+        print(f"[DEBUG] Read Battery Voltage: {battery_voltage:.2f}V")
+
+        # 3. **Calculate battery charge percentage with debug statements**
+        battery_charge = calculate_battery_charge(battery_voltage)
+        print(f"[DEBUG] Read Battery Charge: {battery_charge}%")
+
+        # 4. **Read the CPU temperature**
         cpu_temp = get_cpu_temperature()
 
         # Append the current temperature to the list
@@ -301,12 +322,6 @@ try:
         # Calculate fan speed based on the average CPU temperature
         current_duty_cycle = calculate_fan_speed(avg_cpu_temp)
         fan_pwm.ChangeDutyCycle(current_duty_cycle)
-
-        # Read battery voltage
-        battery_voltage = read_battery_voltage()
-
-        # Calculate battery charge percentage
-        battery_charge = calculate_battery_charge(battery_voltage)
 
         # Control LEDs based on temperature and battery voltage
         control_leds(avg_cpu_temp, battery_voltage)
@@ -328,27 +343,36 @@ try:
             avg_cpu_temp, current_duty_cycle, battery_voltage, battery_charge
         )
 
-        # Check for low voltage and handle shutdown if necessary
-        if battery_voltage < LOW_VOLTS and not low_voltage_triggered:
-            # Determine log file and CSV file paths
-            now = datetime.now(timezone)
-            date_str = now.strftime("%Y-%m-%d")
-            log_file_path = os.path.join(log_folder, f"{date_str}.log")
-            csv_file_path = os.path.join(log_folder, f"{date_str}.csv")
+        # 5. **Low Voltage Handling with Debounce**
+        if battery_voltage < LOW_VOLTS:
+            LOW_VOLTAGE_COUNT += 1
+            print(
+                f"[DEBUG] Low voltage detected ({LOW_VOLTAGE_COUNT}/{LOW_VOLTAGE_THRESHOLD})"
+            )
+            if LOW_VOLTAGE_COUNT >= LOW_VOLTAGE_THRESHOLD and not low_voltage_triggered:
+                # Determine log file and CSV file paths
+                now = datetime.now(timezone)
+                date_str = now.strftime("%Y-%m-%d")
+                log_file_path = os.path.join(log_folder, f"{date_str}.log")
+                csv_file_path = os.path.join(log_folder, f"{date_str}.csv")
 
-            # Initialize CSV writer
-            csv_file, csv_writer = initialize_csv(csv_file_path)
+                # Initialize CSV writer
+                csv_file, csv_writer = initialize_csv(csv_file_path)
 
-            # Handle low voltage (shutdown)
-            handle_low_voltage(battery_voltage, battery_charge, csv_writer)
+                # Handle low voltage (shutdown)
+                handle_low_voltage(battery_voltage, battery_charge, csv_writer)
 
-            # Close the CSV file after writing (although shutdown will stop the script)
-            csv_file.close()
+                # Close the CSV file after writing (although shutdown will stop the script)
+                csv_file.close()
 
-            # Set the flag to prevent multiple shutdowns
-            low_voltage_triggered = True
+                # Set the flag to prevent multiple shutdowns
+                low_voltage_triggered = True
+        else:
+            if LOW_VOLTAGE_COUNT > 0:
+                print("[DEBUG] Voltage back to normal.")
+            LOW_VOLTAGE_COUNT = 0
 
-        # Log the temperature, fan speed, battery voltage, and charge to the file and CSV every 60 seconds
+        # 6. **Log status every 60 seconds**
         if time.time() - last_log_time >= 60:
             # Determine log file and CSV file paths
             now = datetime.now(timezone)
@@ -373,13 +397,14 @@ try:
 
             last_log_time = time.time()
 
-        # Sleep for 1 second before the next reading
-        time.sleep(1)
+        # 7. **Sleep for the defined check interval before the next reading**
+        time.sleep(CHECK_INTERVAL)
 
 except KeyboardInterrupt:
-    pass  # Gracefully handle Ctrl+C
+    print("\n[INFO] Script interrupted by user.")
 
 finally:
     # Cleanup fan PWM and GPIO
     fan_pwm.stop()
     GPIO.cleanup()
+    print("[INFO] GPIO cleanup completed.")
