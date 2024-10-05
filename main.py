@@ -11,6 +11,8 @@ from adafruit_ads1x15.analog_in import AnalogIn
 import json
 from dotenv import load_dotenv
 import csv
+from twilio.rest import Client
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -57,6 +59,22 @@ V_MAX = HIGH_VOLTS  # 100%
 LOW_VOLTAGE_COUNT = 0
 LOW_VOLTAGE_THRESHOLD = 5  # Number of consecutive low readings required
 CHECK_INTERVAL = 1  # Interval in seconds between checks
+
+TWILIO_ENABLE = False
+TWILIO_SID = ""
+TWILIO_AUTH = ""
+TWILIO_FROM = ""
+TWILIO_TO = ""
+TWILIO_CONTENT_SID = ""
+
+# Retrieve TWILIO_ENABLE variables
+if os.getenv("TWILIO_ENABLE", "FALSE").upper() == "TRUE":
+    TWILIO_ENABLE = True
+    TWILIO_SID = os.getenv("TWILIO_SID")
+    TWILIO_AUTH = os.getenv("TWILIO_AUTH")
+    TWILIO_FROM = os.getenv("TWILIO_FROM")
+    TWILIO_TO = os.getenv("TWILIO_TO")
+    TWILIO_CONTENT_SID = os.getenv("TWILIO_CONTENT_SID")
 
 # Set up GPIO for fan control
 GPIO.setmode(GPIO.BCM)
@@ -265,6 +283,20 @@ def handle_low_voltage(battery_voltage, battery_charge, csv_writer):
     with open(log_file_path, "a") as log_file:
         log_entry = f"[{time_str}] LOW VOLTAGE DETECTED: VOLTAGE[{battery_voltage:.2f}V] - CHARGE[{battery_charge}%]. SYSTEM SHUTTING DOWN.\n"
         log_file.write(log_entry)
+
+    if TWILIO_ENABLE == True:
+        content_variables_string = (
+            f'{"{"}"1":"{battery_charge}","2":"{battery_voltage}"{"}"}'
+        )
+
+        client = Client(TWILIO_SID, TWILIO_AUTH)
+        message = client.messages.create(
+            from_=TWILIO_FROM,
+            content_sid=TWILIO_CONTENT_SID,
+            content_variables=f"{content_variables_string}",
+            to=TWILIO_TO,
+        )
+        print(message.sid)
 
     # Prepare data for CSV
     csv_data = {

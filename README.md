@@ -29,5 +29,13 @@ BLINK_INTERVAL=0.5
 # Resistor Settings (Ohms)
 R1_VALUE=9900.0
 R2_VALUE=3333.3
+
+# Twilio Credentials
+TWILIO_ENABLE=FALSE
+TWILIO_SID=your_sid
+TWILIO_AUTH=your_auth_token
+TWILIO_FROM=sender
+TWILIO_TO=target
+TWILIO_CONTENT_SID=content_template_sid
 ```
 
