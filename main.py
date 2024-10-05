@@ -337,6 +337,8 @@ try:
     # Flag to ensure shutdown is triggered only once
     low_voltage_triggered = False
 
+    temp_notified = False
+
     while True:
         # 2. **Read battery voltage with debug statements**
         battery_voltage = read_battery_voltage()
@@ -365,7 +367,7 @@ try:
         control_leds(avg_cpu_temp, battery_voltage)
 
         # Check if temperature needs to be notified
-        temp_notified = False
+
         if cpu_temp >= MAX_TEMP + 1.0:
             if TWILIO_ENABLE == True and temp_notified == False:
                 use_twilio(
