@@ -221,13 +221,6 @@ def control_leds(cpu_temp, battery_voltage):
             GPIO.output(LED_1_PIN, led1_state)
             led1_last_toggle_time = current_time
 
-        if TWILIO_ENABLE == True:
-            use_twilio(
-                cpu_temp,
-                round(current_duty_cycle),
-                "HX8846ba2e1c8a5a8de9b41de716c0efed",
-            )
-
     else:
         # Ensure LED is off
         led1_state = False
@@ -370,6 +363,20 @@ try:
 
         # Control LEDs based on temperature and battery voltage
         control_leds(avg_cpu_temp, battery_voltage)
+
+        # Check if temperature needs to be notified
+        temp_notified = False
+        if cpu_temp >= MAX_TEMP + 1.0:
+            if TWILIO_ENABLE == True and temp_notified == False:
+                use_twilio(
+                    round(cpu_temp),
+                    round(current_duty_cycle),
+                    "HX8846ba2e1c8a5a8de9b41de716c0efed",
+                )
+                temp_notified = True
+
+        if cpu_temp < MAX_TEMP - 2.0:
+            temp_notified = False
 
         # Read button states
         BTN_1 = GPIO.input(BTN_1_PIN)
