@@ -36,6 +36,5 @@ TWILIO_SID=your_sid
 TWILIO_AUTH=your_auth_token
 TWILIO_FROM=sender
 TWILIO_TO=target
-TWILIO_CONTENT_SID=content_template_sid
 ```
 

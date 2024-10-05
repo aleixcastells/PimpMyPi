@@ -74,7 +74,6 @@ if os.getenv("TWILIO_ENABLE", "FALSE").upper() == "TRUE":
     TWILIO_AUTH = os.getenv("TWILIO_AUTH")
     TWILIO_FROM = os.getenv("TWILIO_FROM")
     TWILIO_TO = os.getenv("TWILIO_TO")
-    TWILIO_CONTENT_SID = os.getenv("TWILIO_CONTENT_SID")
 
 # Set up GPIO for fan control
 GPIO.setmode(GPIO.BCM)
@@ -221,6 +220,14 @@ def control_leds(cpu_temp, battery_voltage):
             led1_state = not led1_state
             GPIO.output(LED_1_PIN, led1_state)
             led1_last_toggle_time = current_time
+
+        if TWILIO_ENABLE == True:
+            use_twilio(
+                cpu_temp,
+                round(current_duty_cycle),
+                "HX8846ba2e1c8a5a8de9b41de716c0efed",
+            )
+
     else:
         # Ensure LED is off
         led1_state = False
@@ -238,6 +245,20 @@ def control_leds(cpu_temp, battery_voltage):
         # Ensure LED is off
         led2_state = False
         GPIO.output(LED_2_PIN, led2_state)
+
+
+def use_twilio(var1, var2, content_template_ssid):
+    if TWILIO_ENABLE == True:
+        content_variables_string = f'{"{"}"1":"{var1}","2":"{var2}"{"}"}'
+
+        client = Client(TWILIO_SID, TWILIO_AUTH)
+        message = client.messages.create(
+            from_=TWILIO_FROM,
+            content_sid=content_template_ssid,
+            content_variables=f"{content_variables_string}",
+            to=TWILIO_TO,
+        )
+        print(message.sid)
 
 
 # Initialize a list to store temperature readings
@@ -285,18 +306,12 @@ def handle_low_voltage(battery_voltage, battery_charge, csv_writer):
         log_file.write(log_entry)
 
     if TWILIO_ENABLE == True:
+        use_twilio(
+            battery_charge, battery_voltage, "HX4bfa83293466e6b98079698206a362dc"
+        )
         content_variables_string = (
             f'{"{"}"1":"{battery_charge}","2":"{battery_voltage}"{"}"}'
         )
-
-        client = Client(TWILIO_SID, TWILIO_AUTH)
-        message = client.messages.create(
-            from_=TWILIO_FROM,
-            content_sid=TWILIO_CONTENT_SID,
-            content_variables=f"{content_variables_string}",
-            to=TWILIO_TO,
-        )
-        print(message.sid)
 
     # Prepare data for CSV
     csv_data = {
