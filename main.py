@@ -300,11 +300,9 @@ try:
     while True:
         # 2. **Read battery voltage with debug statements**
         battery_voltage = read_battery_voltage()
-        print(f"[DEBUG] Read Battery Voltage: {battery_voltage:.2f}V")
 
         # 3. **Calculate battery charge percentage with debug statements**
         battery_charge = calculate_battery_charge(battery_voltage)
-        print(f"[DEBUG] Read Battery Charge: {battery_charge}%")
 
         # 4. **Read the CPU temperature**
         cpu_temp = get_cpu_temperature()
