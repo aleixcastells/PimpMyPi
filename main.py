@@ -367,8 +367,7 @@ try:
         control_leds(avg_cpu_temp, battery_voltage)
 
         # Check if temperature needs to be notified
-
-        if cpu_temp >= MAX_TEMP + 1.0:
+        if cpu_temp >= MAX_TEMP + 4.0:
             if TWILIO_ENABLE == True and temp_notified == False:
                 use_twilio(
                     round(cpu_temp),
