@@ -328,9 +328,9 @@ def handle_low_voltage(battery_voltage, battery_charge, csv_writer):
 
 try:
     # 1. **Initial Startup Delay**
-    print("[INFO] System is starting up. Waiting for voltage stabilization...")
+    print("[INFO] Waiting for voltage stabilization...")
     time.sleep(5)  # Wait for 5 seconds
-    print("[INFO] Starting main loop.")
+    print("[INFO] Ready!")
 
     last_log_time = time.time()  # Keep track of when to log to the file
 
