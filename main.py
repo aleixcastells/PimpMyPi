@@ -202,7 +202,14 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, battery_charge, csv_writer
 
 
 def print_to_console(cpu_temp, duty_cycle, battery_voltage, battery_charge):
-    console_entry = f"{cpu_temp:.1f}° | {' ' if(round(duty_cycle)<10) else ''}{round(duty_cycle)}% | {battery_voltage:.1f}V,{' ' if(calculate_battery_charge(battery_voltage) < 100) else ''}{calculate_battery_charge(battery_voltage)}% | {'HOT' if int(cpu_temp >= MAX_TEMP) else 'OFF'},{'BAT' if int(battery_voltage < MIN_VOLTS) else 'OFF'}"
+    console_entry = (
+        f"{cpu_temp:.1f}° | "
+        f"{round(duty_cycle):>2}% | "
+        f"{battery_voltage:.1f}V, "
+        f"{round(calculate_battery_charge(battery_voltage)):>3}% | "
+        f"{'HOT' if cpu_temp >= MAX_TEMP else 'OFF'},"
+        f"{'BAT' if battery_voltage < MIN_VOLTS else 'OFF'}"
+        )
     print(console_entry)
 
 
