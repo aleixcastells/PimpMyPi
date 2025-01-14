@@ -195,7 +195,7 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, battery_charge, csv_writer
             f"{'HOT' if cpu_temp >= MAX_TEMP else 'OFF'},"
             f"{'BAT' if battery_voltage < MIN_VOLTS else 'OFF'}"        
         )
-        log_file.write(log_entry)
+        log_file.write(log_entry + "\n")
 
     # Prepare data for CSV
     csv_data = {
