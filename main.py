@@ -181,7 +181,14 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, battery_charge, csv_writer
 
     # Create or append to the log file
     with open(log_file_path, "a") as log_file:
-        log_entry = f"[{time_str}] TEMP[{cpu_temp:.1f}] - FAN[{round(duty_cycle)}%] - BAT[{battery_voltage:.2f}V,{calculate_battery_charge(battery_voltage)}%] - BTNS[{BTN_1},{BTN_2}] - LEDS[{int(cpu_temp >= MAX_TEMP)},{int(battery_voltage < MIN_VOLTS)}]\n"
+        log_entry = (
+            f"[{time_str}] TEMP[{cpu_temp:.1f}] - "
+            f"FAN[{round(duty_cycle):>2}%] | "
+            f"BAT {battery_voltage:.2f}V,"
+            f"{round(calculate_battery_charge(battery_voltage)):>3}% | "
+            f"BTNS {BTN_1},{BTN_2} | "
+            f"LEDS {cpu_temp >= MAX_TEMP},{battery_voltage < MIN_VOLTS}\n"
+        )
         log_file.write(log_entry)
 
     # Prepare data for CSV
@@ -192,9 +199,7 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, battery_charge, csv_writer
         "Battery_Voltage_V": battery_voltage,
         "Battery_Charge_%": battery_charge,
         "Button_1": BTN_1,
-        "Button_2": BTN_2,
-        "LED_1_State": int(cpu_temp >= MAX_TEMP),
-        "LED_2_State": int(battery_voltage < MIN_VOLTS),
+        "Button_2": BTN_2
     }
 
     # Write to CSV
@@ -282,8 +287,6 @@ def initialize_csv(csv_file_path):
         "Battery_Charge_%",
         "Button_1",
         "Button_2",
-        "LED_1_State",
-        "LED_2_State",
     ]
     writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
@@ -321,9 +324,7 @@ def handle_low_voltage(battery_voltage, battery_charge, csv_writer):
         "Battery_Voltage_V": battery_voltage,
         "Battery_Charge_%": battery_charge,
         "Button_1": BTN_1,
-        "Button_2": BTN_2,
-        "LED_1_State": "N/A",
-        "LED_2_State": "N/A",
+        "Button_2": BTN_2
     }
 
     # Write to CSV
