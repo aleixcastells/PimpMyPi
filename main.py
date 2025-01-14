@@ -187,7 +187,7 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, battery_charge, csv_writer
     with open(log_file_path, "a") as log_file:
         log_entry = (
             f"[{time_str}] | "
-            f"temp {cpu_temp:.1f}ºC | "
+            f"temp {cpu_temp:.1f} | "
             f"fan {round(duty_cycle):>2}% | "
             f"bat {battery_voltage:.2f}V, "
             f"{round(calculate_battery_charge(battery_voltage)):>3}% | "
