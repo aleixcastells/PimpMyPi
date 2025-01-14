@@ -108,6 +108,10 @@ log_folder = os.path.join(os.getcwd(), "logs")
 if not os.path.exists(log_folder):
     os.makedirs(log_folder)
 
+# How often to do cleanup (in seconds); 1 day is 86400 seconds
+CLEANUP_INTERVAL = 86400
+last_cleanup_time = 0
+
 # Initialize I2C bus and ADC with error handling
 try:
     i2c = busio.I2C(board.SCL, board.SDA)
@@ -204,6 +208,17 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, battery_charge, csv_writer
 
     # Write to CSV
     csv_writer.writerow(csv_data)
+
+
+def clean_old_logs(directory, days=60):
+    cutoff = time.time() - days * 24 * 60 * 60
+    for file_name in os.listdir(directory):
+        if file_name.endswith(".log") or file_name.endswith(".csv"):
+            file_path = os.path.join(directory, file_name)
+            if os.path.isfile(file_path):
+                if os.path.getmtime(file_path) < cutoff:
+                    os.remove(file_path)
+                    print(f"[INFO] Deleted old log file: {file_name}")
 
 
 def print_to_console(cpu_temp, duty_cycle, battery_voltage, battery_charge):
@@ -455,6 +470,11 @@ try:
 
             # Close the CSV file after writing
             csv_file.close()
+
+            # Check if it's time to clean up old logs
+            if time.time() - last_cleanup_time > CLEANUP_INTERVAL:
+                clean_old_logs(log_folder, 60)  # 60 days
+                last_cleanup_time = time.time()
 
             last_log_time = time.time()
 
