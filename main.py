@@ -186,13 +186,15 @@ def log_status(cpu_temp, duty_cycle, battery_voltage, battery_charge, csv_writer
     # Create or append to the log file
     with open(log_file_path, "a") as log_file:
         log_entry = (
-            f"[{time_str}] TEMP[{cpu_temp:.1f}] - "
-            f"FAN[{round(duty_cycle):>2}%] | "
+            f"[{time_str}] {cpu_temp:.1f}°C | "
+            f"fan {round(duty_cycle):>2}% | "
             f"BAT {battery_voltage:.2f}V,"
             f"{round(calculate_battery_charge(battery_voltage)):>3}% | "
             f"BTNS {BTN_1},{BTN_2} | "
-            f"LEDS {cpu_temp >= MAX_TEMP},{battery_voltage < MIN_VOLTS}\n"
+            f"{'HOT' if cpu_temp >= MAX_TEMP else 'OFF'},"
+            f"{'BAT' if battery_voltage < MIN_VOLTS else 'OFF'}"        
         )
+        
         log_file.write(log_entry)
 
     # Prepare data for CSV
